@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var authVM = AuthViewModel()
+    @EnvironmentObject var authVM: AuthViewModel
 
     var body: some View {
         if authVM.isLoggedIn {
@@ -17,4 +17,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(AuthViewModel())
 }

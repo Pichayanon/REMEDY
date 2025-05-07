@@ -26,38 +26,35 @@ struct ProfileView: View {
                 DatePicker("Before Sleep", selection: $sleep, displayedComponents: .hourAndMinute)
             }
 
-            // 🔘 ปุ่ม Save และ Sign Out วางข้างกัน
             Section {
-                HStack(spacing: 16) {
-                    Button(action: {
-                        let profile = UserProfile(
-                            name: name,
-                            breakfastTime: breakfast,
-                            lunchTime: lunch,
-                            dinnerTime: dinner,
-                            sleepTime: sleep
-                        )
-                        authVM.saveUserProfile(profile)
-                        dismiss()
-                    }) {
-                        Text("Save")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.purple)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
+                Button(action: {
+                    let profile = UserProfile(
+                        name: name,
+                        breakfastTime: breakfast,
+                        lunchTime: lunch,
+                        dinnerTime: dinner,
+                        sleepTime: sleep
+                    )
+                    authVM.saveUserProfile(profile)
+                    dismiss()
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
 
-                    Button(action: {
-                        authVM.signOut()
-                    }) {
-                        Text("Sign Out")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
+                Button(action: {
+                    authVM.signOut()
+                }) {
+                    Text("Sign Out")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
             }
         }
