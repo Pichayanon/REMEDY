@@ -122,12 +122,21 @@ struct MedicineTakenView: View {
                 Spacer(minLength: 0)
             }
             .frame(maxHeight: .infinity, alignment: .top)
+            .onAppear {
+                if let profile = authVM.userProfile {
+                    doseLogVM.checkAndMarkMissedDoses(for: viewModel.medications, profile: profile)
+                }
+            }
+
         }
     }
 
     func filteredMeds() -> [Medication] {
         guard let meal = currentMeal else { return [] }
-        let all = viewModel.medications.filter { $0.mealTimes.contains(meal) }
+
+        let all = viewModel.medications.filter {
+            $0.mealTimes.contains(meal) || (meal == "Sleep" && $0.isBeforeSleep)
+        }
 
         switch filter {
         case .all: return all
@@ -135,6 +144,7 @@ struct MedicineTakenView: View {
         case .notTaken: return all.filter { !hasAlreadyTaken(medication: $0, meal: meal) }
         }
     }
+
 
     func hasAlreadyTaken(medication: Medication, meal: String) -> Bool {
         let today = Calendar.current.startOfDay(for: Date())
@@ -147,34 +157,35 @@ struct MedicineTakenView: View {
 
     func getCurrentMeal(from profile: UserProfile?) -> String? {
         guard let profile = profile else { return nil }
-        let now = Date()
-        let calendar = Calendar.current
 
-        func isBetween(_ start: Date, _ end: Date) -> Bool {
-            return now >= start && now < end
-        }
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "Asia/Bangkok")!
+
+        let now = Date()
 
         let breakfast = profile.breakfastTime
         let lunch = profile.lunchTime
         let dinner = profile.dinnerTime
         let sleep = profile.sleepTime
+        let sleepMinus30Min = calendar.date(byAdding: .minute, value: -30, to: sleep)!
+        let sleepPlus2Hours = calendar.date(byAdding: .hour, value: 2, to: sleep)!
 
-        let lunchEnd = calendar.date(byAdding: .hour, value: 6, to: lunch)!
-        let dinnerEnd = calendar.date(byAdding: .hour, value: 6, to: dinner)!
-        let sleepEnd = calendar.date(byAdding: .hour, value: 6, to: sleep)!
+        func isBetween(_ start: Date, _ end: Date) -> Bool {
+            return now >= start && now < end
+        }
 
         if isBetween(breakfast, lunch) {
             return "Breakfast"
         } else if isBetween(lunch, dinner) {
             return "Lunch"
-        } else if isBetween(dinner, sleep) {
+        } else if isBetween(dinner, sleepMinus30Min) {
             return "Dinner"
-        } else if isBetween(sleep, sleepEnd) {
+        } else if isBetween(sleepMinus30Min, sleepPlus2Hours) {
             return "Sleep"
         }
-
         return nil
     }
+
 
     func translatedMeal(_ meal: String) -> String {
         switch meal {
