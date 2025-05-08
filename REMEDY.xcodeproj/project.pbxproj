@@ -15,9 +15,23 @@
 		72A98EE72DAD4535007AE003 /* REMEDY.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = REMEDY.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		725A014D2DCCC10C007A4293 /* Exceptions for "REMEDY" folder in "REMEDY" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ViewModels/Untitled.swift,
+				Views/Untitled.swift,
+			);
+			target = 72A98EE62DAD4535007AE003 /* REMEDY */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		72A98EE92DAD4535007AE003 /* REMEDY */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				725A014D2DCCC10C007A4293 /* Exceptions for "REMEDY" folder in "REMEDY" target */,
+			);
 			path = REMEDY;
 			sourceTree = "<group>";
 		};

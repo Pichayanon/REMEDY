@@ -3,11 +3,14 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var medicationVM = MedicationViewModel()
+    @StateObject private var doseLogVM = DoseLogViewModel()
+
 
     @State private var showAddMedicine = false
     @State private var editingMedication: Medication? = nil
     @State private var showProfile = false
     @State private var showTaken = false
+    @State private var showHistory = false
 
     var body: some View {
         NavigationView {
@@ -25,7 +28,7 @@ struct HomeView: View {
                         }
                     }
 
-                    HStack {
+                    HStack(spacing: 12) {
                         Text("Your Medicines")
                             .font(.title3)
                             .foregroundColor(.secondary)
@@ -36,6 +39,14 @@ struct HomeView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(Color.green.opacity(0.2))
+                        .cornerRadius(10)
+
+                        Button("History") {
+                            showHistory = true
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.2))
                         .cornerRadius(10)
                     }
 
@@ -88,11 +99,18 @@ struct HomeView: View {
             .sheet(isPresented: $showTaken) {
                 MedicineTakenView(viewModel: medicationVM)
             }
+
+            .sheet(isPresented: $showHistory) {
+                NavigationView {
+                    HistoryLogView(doseLogVM: doseLogVM)
+                }
+            }
+
         }
     }
 }
 
 #Preview {
     HomeView()
-        .environmentObject(AuthViewModel())
+        .environmentObject(AuthViewModel(preview: true))
 }
