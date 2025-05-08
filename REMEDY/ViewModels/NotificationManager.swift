@@ -16,25 +16,29 @@ class NotificationManager {
         }
     }
 
-    func scheduleNotification(for med: Medication, at date: Date) {
+    func scheduleNotification(for med: Medication, at date: Date, identifier: String) {
         let content = UNMutableNotificationContent()
         content.title = "ถึงเวลากินยาแล้ว"
         content.body = "\(med.name) - \(med.mealTiming)"
         content.sound = .defaultCritical
         content.categoryIdentifier = "MEDICATION_ACTIONS"
 
-        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.hour, .minute], from: date), repeats: false)
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents([.hour, .minute], from: date),
+            repeats: false
+        )
 
-        let request = UNNotificationRequest(identifier: med.id.uuidString, content: content, trigger: trigger)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Failed to schedule notification:", error)
             } else {
-                print("Scheduled notification for \(med.name) at \(date)")
+                print("✅ Scheduled notification for \(med.name) [\(identifier)] at \(date)")
             }
         }
     }
+
 
     func rescheduleIn(minutes: Int, for id: String) {
         UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
@@ -59,4 +63,31 @@ class NotificationManager {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
         print("Cancelled notification:", id)
     }
+    
+    func scheduleLowPillWarning(for med: Medication, at date: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = "⚠️ ยาใกล้หมดแล้ว"
+        content.body = "ยาของคุณ \(med.name) จะหมดพรุ่งนี้ อย่าลืมเตรียมหาซื้อเพิ่มนะ!"
+        content.sound = .default
+
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents([.hour, .minute], from: date),
+            repeats: false
+        )
+
+        let request = UNNotificationRequest(
+            identifier: "\(med.id.uuidString)_lowpill",
+            content: content,
+            trigger: trigger
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Failed to schedule low pill warning:", error)
+            } else {
+                print("⚠️ Low pill warning scheduled for \(med.name) at \(date)")
+            }
+        }
+    }
+
 }

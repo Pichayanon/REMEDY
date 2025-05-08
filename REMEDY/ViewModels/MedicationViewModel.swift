@@ -26,6 +26,43 @@ class MedicationViewModel: ObservableObject {
                 }
             }
     }
+    
+    private func scheduleLowPillWarningIfNeeded(for medication: Medication) {
+        let dosesPerDay = max(1, medication.mealTimes.count + (medication.isBeforeSleep ? 1 : 0))
+        let dailyPillUsage = medication.pillsPerDose * dosesPerDay
+
+        guard dailyPillUsage > 0 else { return }
+
+        let daysLeft = medication.totalPills / dailyPillUsage
+
+        print("💊 Checking pills for \(medication.name): \(medication.totalPills) pills left, uses \(dailyPillUsage)/day → \(daysLeft) days left")
+
+        if daysLeft == 1 {
+            // ⏱ Trigger the notification immediately
+            let content = UNMutableNotificationContent()
+            content.title = "⚠️ ยาใกล้หมดแล้ว"
+            content.body = "ยาของคุณ \(medication.name) จะหมดพรุ่งนี้!"
+            content.sound = .default
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false) // shows in 3 sec
+
+            let request = UNNotificationRequest(
+                identifier: "\(medication.id.uuidString)_lowpill",
+                content: content,
+                trigger: trigger
+            )
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Failed to trigger low-pill notification:", error)
+                } else {
+                    print("🚨 Low-pill alert triggered for \(medication.name)")
+                }
+            }
+        }
+    }
+
+
 
     func addMedication(_ medication: Medication, userProfile: UserProfile) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -36,9 +73,14 @@ class MedicationViewModel: ObservableObject {
                 .setData(from: medication)
 
             let reminderTimes = calculateReminderTimes(for: medication, from: userProfile)
-            for date in reminderTimes {
-                NotificationManager.shared.scheduleNotification(for: medication, at: date)
+
+            for (index, date) in reminderTimes.enumerated() {
+                let identifier = "\(medication.id.uuidString)_\(index)"
+                NotificationManager.shared.scheduleNotification(for: medication, at: date, identifier: identifier)
             }
+
+            scheduleLowPillWarningIfNeeded(for: medication)
+
 
         } catch {
             print("Error saving medication: \(error)")
@@ -57,6 +99,7 @@ class MedicationViewModel: ObservableObject {
                 .setData(from: updated)
 
             NotificationManager.shared.cancelNotification(with: updated.id.uuidString)
+            scheduleLowPillWarningIfNeeded(for: updated)
 
         } catch {
             print("Error updating medication: \(error)")
@@ -72,7 +115,10 @@ class MedicationViewModel: ObservableObject {
                 if let error = error {
                     print("Error deleting medication: \(error)")
                 } else {
-                    NotificationManager.shared.cancelNotification(with: medication.id.uuidString)
+                    let identifiers = (0..<5).map { "\(medication.id.uuidString)_\($0)" }
+                    for id in identifiers {
+                        NotificationManager.shared.cancelNotification(with: id)
+                    }
                 }
             }
     }
@@ -88,7 +134,7 @@ class MedicationViewModel: ObservableObject {
             times.append(adjustedTime(from: profile.sleepTime, offset: -30))
         }
 
-        let offset = medication.mealTiming == "Before" ? -30 : 30
+        let offset = medication.mealTiming == "Before Meal" ? -30 : 30
 
         for meal in medication.mealTimes {
             switch meal {

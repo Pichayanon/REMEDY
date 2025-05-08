@@ -147,15 +147,20 @@ class AuthViewModel: ObservableObject {
                 }
 
                 for med in medications {
-                    NotificationManager.shared.cancelNotification(with: med.id.uuidString)
+                    for i in 0..<5 {
+                        NotificationManager.shared.cancelNotification(with: "\(med.id.uuidString)_\(i)")
+                    }
                 }
+
                 
                 for med in medications {
                     let times = self.calculateReminderTimes(for: med, from: profile)
-                    for time in times {
-                        NotificationManager.shared.scheduleNotification(for: med, at: time)
+                    for (index, time) in times.enumerated() {
+                        let identifier = "\(med.id.uuidString)_\(index)"
+                        NotificationManager.shared.scheduleNotification(for: med, at: time, identifier: identifier)
                     }
                 }
+
 
                 DispatchQueue.main.async {
                     self.userProfile = profile
@@ -172,18 +177,24 @@ class AuthViewModel: ObservableObject {
     private func calculateReminderTimes(for medication: Medication, from profile: UserProfile) -> [Date] {
         var times: [Date] = []
 
-        if medication.isBeforeSleep {
-            times.append(profile.sleepTime)
+        func adjustedTime(from base: Date, offset: Int) -> Date {
+            return Calendar.current.date(byAdding: .minute, value: offset, to: base) ?? base
         }
+
+        if medication.isBeforeSleep {
+            times.append(adjustedTime(from: profile.sleepTime, offset: -30))
+        }
+
+        let offset = medication.mealTiming == "Before Meal" ? -30 : 30
 
         for meal in medication.mealTimes {
             switch meal {
             case "Breakfast":
-                times.append(profile.breakfastTime)
+                times.append(adjustedTime(from: profile.breakfastTime, offset: offset))
             case "Lunch":
-                times.append(profile.lunchTime)
+                times.append(adjustedTime(from: profile.lunchTime, offset: offset))
             case "Dinner":
-                times.append(profile.dinnerTime)
+                times.append(adjustedTime(from: profile.dinnerTime, offset: offset))
             default:
                 break
             }
