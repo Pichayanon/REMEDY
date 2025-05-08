@@ -18,66 +18,137 @@ struct MedicationAddView: View {
     @State private var alertMessage = ""
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Medicine Info")) {
-                    TextField("ชื่อยา", text: $name)
-                        .autocorrectionDisabled(true)
-                        .textInputAutocapitalization(.never)
-                }
+        ZStack {
+            LinearGradient(colors: [Color.purple.opacity(0.1), Color.white],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
 
-                Section(header: Text("Meal Timing")) {
-                    Picker("Meal Timing", selection: $mealTiming) {
-                        Text("Before Meal").tag("Before Meal")
-                        Text("After Meal").tag("After Meal")
+            ScrollView {
+                VStack(spacing: 24) {
+                    Text(medicationToEdit == nil ? "Add Medicine" : "Edit Medicine")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.purple)
+                        .padding(.top, 32)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Medicine Name", systemImage: "pills.fill")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.secondary)
+
+                        TextField("Enter name", text: $name)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
-                    .pickerStyle(.segmented)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal)
 
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Meal Timing", systemImage: "fork.knife")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.secondary)
+
+                        Picker("Meal Timing", selection: $mealTiming) {
+                            Text("Before Meal").tag("Before Meal")
+                            Text("After Meal").tag("After Meal")
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Meal Times", systemImage: "clock")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.secondary)
+
                         Toggle("Breakfast", isOn: mealBinding(for: "Breakfast"))
                         Toggle("Lunch", isOn: mealBinding(for: "Lunch"))
                         Toggle("Dinner", isOn: mealBinding(for: "Dinner"))
                     }
-                    .padding(.leading)
-                }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal)
 
-                Section(header: Text("Night Dose")) {
-                    Toggle("Before Sleep", isOn: $isBeforeSleep)
-                        .toggleStyle(SwitchToggleStyle(tint: .purple))
-                }
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Night Dose", systemImage: "moon.zzz.fill")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.secondary)
 
-                Section(header: Text("Dosage Info")) {
-                    TextField("จำนวนยาทั้งหมด", text: $totalPills)
-                        .keyboardType(.numberPad)
-                    TextField("จำนวนยาต่อครั้ง", text: $pillsPerDose)
-                        .keyboardType(.numberPad)
-                }
+                        Toggle("Before Sleep", isOn: $isBeforeSleep)
+                            .toggleStyle(SwitchToggleStyle(tint: .purple))
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal)
 
-                Button(action: saveMedication) {
-                    Text("Save")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Dosage", systemImage: "capsule")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.secondary)
+
+                        TextField("Total Pills", text: $totalPills)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                        TextField("Pills per Dose", text: $pillsPerDose)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal)
+
+                    Button(action: saveMedication) {
+                        Text("Save")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .foregroundColor(.white)
+                            .cornerRadius(20)
+                    }
+                    .padding(.horizontal)
+
+                    Button(action: { dismiss() }) {
+                        Text("Cancel")
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(20)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 32)
                 }
             }
-            .navigationTitle(medicationToEdit == nil ? "Add Medicine" : "Edit Medicine")
-            .onAppear {
-                if let med = medicationToEdit {
-                    name = med.name
-                    mealTiming = med.mealTiming
-                    mealTimes = Set(med.mealTimes)
-                    isBeforeSleep = med.isBeforeSleep
-                    totalPills = String(med.totalPills)
-                    pillsPerDose = String(med.pillsPerDose)
-                }
+        }
+        .onAppear {
+            if let med = medicationToEdit {
+                name = med.name
+                mealTiming = med.mealTiming
+                mealTimes = Set(med.mealTimes)
+                isBeforeSleep = med.isBeforeSleep
+                totalPills = String(med.totalPills)
+                pillsPerDose = String(med.pillsPerDose)
             }
-            .alert("กรอกข้อมูลไม่ครบ", isPresented: $showAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(alertMessage)
-            }
+        }
+        .alert("Incomplete Information", isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alertMessage)
         }
     }
 
@@ -100,25 +171,25 @@ struct MedicationAddView: View {
         let cleanPerDose = pillsPerDose.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !cleanName.isEmpty else {
-            alertMessage = "กรุณากรอกชื่อยา"
+            alertMessage = "Please enter medicine name."
             showAlert = true
             return
         }
-        
+
         guard !mealTimes.isEmpty || isBeforeSleep else {
-            alertMessage = "กรุณาเลือกอย่างน้อยหนึ่งมื้อ หรือก่อนนอน"
+            alertMessage = "Please select at least one meal or before sleep."
             showAlert = true
             return
         }
 
         guard let total = Int(cleanTotal), total > 0 else {
-            alertMessage = "กรุณากรอกจำนวนยาทั้งหมดให้ถูกต้อง"
+            alertMessage = "Please enter a valid total pill amount."
             showAlert = true
             return
         }
 
         guard let perDose = Int(cleanPerDose), perDose > 0 else {
-            alertMessage = "กรุณากรอกจำนวนยาต่อครั้งให้ถูกต้อง"
+            alertMessage = "Please enter a valid pills-per-dose value."
             showAlert = true
             return
         }
@@ -140,6 +211,7 @@ struct MedicationAddView: View {
         if let profile = authVM.userProfile {
             viewModel.addMedication(newMed, userProfile: profile)
         }
+
         dismiss()
     }
 }

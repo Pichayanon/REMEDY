@@ -5,7 +5,6 @@ struct HomeView: View {
     @StateObject private var medicationVM = MedicationViewModel()
     @StateObject private var doseLogVM = DoseLogViewModel()
 
-
     @State private var showAddMedicine = false
     @State private var editingMedication: Medication? = nil
     @State private var showProfile = false
@@ -14,74 +13,81 @@ struct HomeView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text("Hello \(authVM.userProfile?.name ?? "there") 👋")
-                            .font(.title.bold())
-                        Spacer()
-                        Button(action: { showProfile = true }) {
-                            Image(systemName: "person.crop.circle.fill")
-                                .resizable()
-                                .frame(width: 32, height: 32)
+            ZStack {
+                LinearGradient(colors: [Color.purple.opacity(0.1), Color.white], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        HStack {
+                            Text("Hello \(authVM.userProfile?.name ?? "there") 👋")
+                                .font(.title.bold())
                                 .foregroundColor(.purple)
-                        }
-                    }
-
-                    HStack(spacing: 12) {
-                        Text("Your Medicines")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Button("Taken") {
-                            showTaken = true
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.green.opacity(0.2))
-                        .cornerRadius(10)
-
-                        Button("History") {
-                            showHistory = true
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(10)
-                    }
-
-                    ForEach(medicationVM.medications) { med in
-                        MedicationCardView(
-                            medication: med,
-                            onEdit: {
-                                editingMedication = med
-                                showAddMedicine = true
-                            },
-                            onDelete: {
-                                medicationVM.deleteMedication(med)
+                            Spacer()
+                            Button(action: { showProfile = true }) {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                                    .foregroundColor(.purple)
                             }
-                        )
-                    }
-
-                    Button(action: {
-                        editingMedication = nil
-                        showAddMedicine = true
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Add New Medicine")
-                                .fontWeight(.semibold)
                         }
-                        .font(.title3)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.purple.opacity(0.15))
-                        .foregroundColor(.purple)
-                        .cornerRadius(12)
+
+                        HStack(spacing: 12) {
+                            Text("Your Medicines")
+                                .font(.title3.bold())
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Button("Taken") {
+                                showTaken = true
+                            }
+                            .buttonStyle(SoftTagButtonStyle(color: .green))
+
+                            Button("History") {
+                                showHistory = true
+                            }
+                            .buttonStyle(SoftTagButtonStyle(color: .blue))
+                        }
+
+                        ForEach(medicationVM.medications) { med in
+                            MedicationCardView(
+                                medication: med,
+                                onEdit: {
+                                    editingMedication = med
+                                    showAddMedicine = true
+                                },
+                                onDelete: {
+                                    medicationVM.deleteMedication(med)
+                                }
+                            )
+                        }
+
+                        Button(action: {
+                            editingMedication = nil
+                            showAddMedicine = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "plus.circle")
+                                    .font(.title2)
+                                Text("Add New Medicine")
+                                    .fontWeight(.medium)
+                                    .font(.title3)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(colors: [Color.purple.opacity(0.15), Color.purple.opacity(0.05)],
+                                               startPoint: .topLeading,
+                                               endPoint: .bottomTrailing)
+                            )
+                            .foregroundColor(.purple)
+                            .cornerRadius(20)
+                            .shadow(color: Color.purple.opacity(0.1), radius: 4, x: 0, y: 2)
+                        }
+                        .padding(.top, 8)
+
                     }
-                    .padding(.top, 8)
+                    .padding()
                 }
-                .padding()
             }
 
             .sheet(isPresented: $showAddMedicine) {
@@ -105,12 +111,22 @@ struct HomeView: View {
                     HistoryLogView(doseLogVM: doseLogVM)
                 }
             }
-
         }
     }
 }
 
-#Preview {
-    HomeView()
-        .environmentObject(AuthViewModel(preview: true))
+struct SoftTagButtonStyle: ButtonStyle {
+    var color: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(color.opacity(0.15))
+            .foregroundColor(color)
+            .clipShape(Capsule())
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+    }
 }
+

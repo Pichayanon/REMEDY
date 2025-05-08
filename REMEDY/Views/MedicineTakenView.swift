@@ -17,92 +17,122 @@ struct MedicineTakenView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("\(translatedMeal(currentMeal ?? "-")) Meal")
-                    .font(.title2.bold())
-                    .padding(.top)
+        ZStack {
+            LinearGradient(colors: [Color.purple.opacity(0.1), Color.white],
+                           startPoint: .topLeading,
+                           endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
+                    Text("Medication Taken")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.purple)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 16)
+                        .padding(.horizontal)
+
+                    if let meal = currentMeal {
+                        Text("\(translatedMeal(meal)) Meal")
+                            .font(.title3.bold())
+                            .foregroundColor(.purple)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal)
+
+                        Picker("Filter", selection: $filter) {
+                            ForEach(FilterType.allCases, id: \.self) { Text($0.rawValue) }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .padding(.horizontal)
+                    }
+                }
 
                 if currentMeal == nil {
-                    Text("It's not time for any medication yet.")
-                        .foregroundColor(.secondary)
-                        .padding()
-                } else {
-                    Picker("Filter", selection: $filter) {
-                        ForEach(FilterType.allCases, id: \.self) { f in
-                            Text(f.rawValue).tag(f)
-                        }
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 64))
+                            .foregroundColor(.gray.opacity(0.3))
+                        Text("No scheduled medication for this time.")
+                            .foregroundColor(.gray)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal)
-
-                    ScrollView {
+                    Spacer()
+                } else {
+                    if filteredMeds().isEmpty {
+                        Spacer()
                         VStack(spacing: 12) {
-                            ForEach(filteredMeds(), id: \.id) { med in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(med.name)
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
+                            Image(systemName: "pills.circle.fill")
+                                .font(.system(size: 64))
+                                .foregroundColor(.gray.opacity(0.3))
+                            Text("No medicines for this meal")
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 16) {
+                                ForEach(filteredMeds(), id: \.id) { med in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Label(med.name, systemImage: "pills.fill")
+                                                .font(.headline)
+                                                .foregroundColor(.purple)
+                                            Spacer()
+                                            if hasAlreadyTaken(medication: med, meal: currentMeal!) {
+                                                Text("Taken")
+                                                    .font(.caption)
+                                                    .padding(.horizontal, 10)
+                                                    .padding(.vertical, 6)
+                                                    .background(Color.green.opacity(0.2))
+                                                    .foregroundColor(.green)
+                                                    .cornerRadius(12)
+                                            } else {
+                                                Button(action: {
+                                                    doseLogVM.addLog(medication: med, meal: currentMeal!)
+                                                    viewModel.markAsTaken(medication: med)
+                                                }) {
+                                                    Text("Mark as Taken")
+                                                        .font(.caption)
+                                                        .padding(.horizontal, 12)
+                                                        .padding(.vertical, 6)
+                                                        .background(Color.blue.opacity(0.15))
+                                                        .foregroundColor(.blue)
+                                                        .cornerRadius(12)
+                                                }
+                                            }
+                                        }
+
                                         Text("Remaining pills: \(med.totalPills)")
                                             .font(.caption)
                                             .foregroundColor(.gray)
                                     }
-
-                                    Spacer()
-
-                                    if hasAlreadyTaken(medication: med, meal: currentMeal!) {
-                                        Text("Taken")
-                                            .font(.caption)
-                                            .padding(6)
-                                            .background(Color.green.opacity(0.2))
-                                            .foregroundColor(.green)
-                                            .cornerRadius(8)
-                                    } else {
-                                        Button(action: {
-                                            doseLogVM.addLog(medication: med, meal: currentMeal!)
-                                            viewModel.markAsTaken(medication: med)
-                                        }) {
-                                            Text("Mark as Taken")
-                                                .font(.caption)
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 6)
-                                                .background(Color.blue.opacity(0.15))
-                                                .foregroundColor(.blue)
-                                                .cornerRadius(8)
-                                        }
-                                    }
+                                    .padding()
+                                    .background(Color.white)
+                                    .cornerRadius(16)
+                                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                                 }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemGray6))
-                                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-                                )
                             }
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                            .padding(.top, 8)
                         }
-                        .padding(.horizontal)
-                        .padding(.bottom)
                     }
                 }
+
+                Spacer(minLength: 0)
             }
-            .navigationTitle("Medication Taken")
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .frame(maxHeight: .infinity, alignment: .top)
         }
     }
 
     func filteredMeds() -> [Medication] {
         guard let meal = currentMeal else { return [] }
-
         let all = viewModel.medications.filter { $0.mealTimes.contains(meal) }
 
         switch filter {
-        case .all:
-            return all
-        case .taken:
-            return all.filter { hasAlreadyTaken(medication: $0, meal: meal) }
-        case .notTaken:
-            return all.filter { !hasAlreadyTaken(medication: $0, meal: meal) }
+        case .all: return all
+        case .taken: return all.filter { hasAlreadyTaken(medication: $0, meal: meal) }
+        case .notTaken: return all.filter { !hasAlreadyTaken(medication: $0, meal: meal) }
         }
     }
 

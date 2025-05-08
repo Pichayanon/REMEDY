@@ -1,180 +1,148 @@
 import SwiftUI
-import Charts
 
 struct HistoryLogView: View {
     @ObservedObject var doseLogVM: DoseLogViewModel
 
     @State private var selectedRange: String = "Last 7 Days"
     @State private var searchText: String = ""
+    @State private var takenFilter: String = "All"
 
     let rangeOptions = ["Last 7 Days", "This Month"]
+    let takenOptions = ["All", "Taken", "Missed"]
+
+    var filteredLogs: [DoseLog] {
+        var logs = doseLogVM.logs.filter { log in
+            (searchText.isEmpty || log.medicationName.lowercased().contains(searchText.lowercased())) &&
+            isInSelectedRange(log.date)
+        }
+
+        if takenFilter == "Taken" {
+            logs = logs.filter { $0.isTaken }
+        } else if takenFilter == "Missed" {
+            logs = logs.filter { !$0.isTaken }
+        }
+
+        return logs.sorted { $0.date > $1.date }
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                SummaryChart(taken: totalTaken, missed: totalMissed)
+        ZStack {
+            LinearGradient(colors: [Color.purple.opacity(0.1), Color.white],
+                           startPoint: .topLeading,
+                           endPoint: .bottomTrailing)
+                .ignoresSafeArea()
 
-                if let mostMissed = mostMissedMedication {
-                    Text("Most missed: \(mostMissed.name) (\(mostMissed.count) times)")
-                        .font(.subheadline)
-                        .foregroundColor(.red)
-                }
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
+                    Text("History Log")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.purple)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 16)
+                        .padding(.horizontal)
 
-                Picker("Time Range", selection: $selectedRange) {
-                    ForEach(rangeOptions, id: \.self) {
-                        Text($0)
+                    Picker("Range", selection: $selectedRange) {
+                        ForEach(rangeOptions, id: \.self) { Text($0) }
                     }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
-
-                TextField("Search medication...", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .pickerStyle(.segmented)
                     .padding(.horizontal)
 
-                ForEach(groupedDates(), id: \.self) { dateKey in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(dateKey)
-                            .font(.headline)
-                            .padding(.horizontal)
-
-                        ForEach(groupedLogs()[dateKey] ?? []) { log in
-                            HStack {
-                                Circle()
-                                    .fill(log.isTaken ? Color.green : Color.red)
-                                    .frame(width: 10, height: 10)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(log.medicationName)
-                                        .fontWeight(.medium)
-                                    Text("Meal: \(translatedMeal(log.meal))")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-
-                                Spacer()
-
-                                Text(log.isTaken ? "Taken" : "Missed")
-                                    .foregroundColor(log.isTaken ? .green : .red)
-                                    .font(.subheadline)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray6))
-                            )
-                            .padding(.horizontal)
-                        }
+                    Picker("Status", selection: $takenFilter) {
+                        ForEach(takenOptions, id: \.self) { Text($0) }
                     }
-                    .padding(.bottom)
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+
+                    TextField("Search medicine", text: $searchText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+
+                    HStack {
+                        Text("Total: \(filteredLogs.count)")
+                        Spacer()
+                        Text("Taken: \(filteredLogs.filter { $0.isTaken }.count)")
+                        Text("Missed: \(filteredLogs.filter { !$0.isTaken }.count)")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
                 }
+
+                if filteredLogs.isEmpty {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 64))
+                            .foregroundColor(.gray.opacity(0.3))
+                        Text("No history records found")
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            ForEach(filteredLogs) { log in
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        Label(log.medicationName, systemImage: "pills.fill")
+                                            .font(.headline)
+                                            .foregroundColor(.purple)
+                                        Spacer()
+                                        Text(formattedDate(log.date))
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+
+                                    HStack {
+                                        Text("Meal: \(log.meal)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Spacer()
+                                        Text(log.isTaken ? "Taken" : "Missed")
+                                            .font(.caption)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 4)
+                                            .background(log.isTaken ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
+                                            .foregroundColor(log.isTaken ? .green : .red)
+                                            .cornerRadius(8)
+                                    }
+                                }
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(16)
+                                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .padding(.top, 8)
+                    }
+                }
+
+                Spacer(minLength: 0)
             }
-            .padding(.bottom)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
-        .navigationTitle("Medication History")
     }
 
-    func filteredLogs() -> [DoseLog] {
+    func isInSelectedRange(_ date: Date) -> Bool {
         let calendar = Calendar.current
-        let now = Date()
-        let startOfToday = calendar.startOfDay(for: now)
-
-        let logsInRange: [DoseLog] = {
-            switch selectedRange {
-            case "Last 7 Days":
-                let sevenDaysAgo = calendar.date(byAdding: .day, value: -6, to: startOfToday)!
-                return doseLogVM.logs.filter { $0.date >= sevenDaysAgo }
-            case "This Month":
-                let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-                return doseLogVM.logs.filter { $0.date >= startOfMonth }
-            default:
-                return doseLogVM.logs
-            }
-        }()
-
-        return logsInRange.filter {
-            searchText.isEmpty || $0.medicationName.localizedCaseInsensitiveContains(searchText)
+        let today = Date()
+        switch selectedRange {
+        case "Last 7 Days":
+            guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: today) else { return true }
+            return date >= sevenDaysAgo
+        case "This Month":
+            return calendar.isDate(date, equalTo: today, toGranularity: .month)
+        default:
+            return true
         }
     }
 
-    func groupedLogs() -> [String: [DoseLog]] {
-        Dictionary(grouping: filteredLogs()) { log in
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter.string(from: log.date)
-        }
-    }
-
-    func groupedDates() -> [String] {
-        groupedLogs().keys.sorted(by: >)
-    }
-
-    var totalTaken: Int {
-        filteredLogs().filter { $0.isTaken }.count
-    }
-
-    var totalMissed: Int {
-        filteredLogs().filter { !$0.isTaken }.count
-    }
-
-    var mostMissedMedication: (name: String, count: Int)? {
-        let missed = filteredLogs().filter { !$0.isTaken }
-        let grouped = Dictionary(grouping: missed, by: { $0.medicationName })
-        let sorted = grouped.mapValues { $0.count }.sorted(by: { $0.value > $1.value })
-        return sorted.first.map { ($0.key, $0.value) }
-    }
-
-    func translatedMeal(_ meal: String) -> String {
-        switch meal {
-        case "Breakfast": return "Morning"
-        case "Lunch": return "Afternoon"
-        case "Dinner": return "Evening"
-        case "Sleep": return "Before Bed"
-        default: return meal
-        }
-    }
-}
-
-
-struct SummaryChart: View {
-    let taken: Int
-    let missed: Int
-
-    var total: Int {
-        max(taken + missed, 1)
-    }
-
-    var body: some View {
-        VStack {
-            Chart {
-                SectorMark(angle: .value("Taken", taken))
-                    .foregroundStyle(Color.green)
-                    .annotation(position: .overlay) {
-                        if taken > 0 {
-                            Text("Taken \(percentage(taken))%")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                        }
-                    }
-
-                SectorMark(angle: .value("Missed", missed))
-                    .foregroundStyle(Color.red)
-                    .annotation(position: .overlay) {
-                        if missed > 0 {
-                            Text("Missed \(percentage(missed))%")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                        }
-                    }
-            }
-            .frame(height: 220)
-            .padding(.horizontal)
-
-        }
-    }
-
-    private func percentage(_ value: Int) -> Int {
-        Int(round((Double(value) / Double(total)) * 100))
+    func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
