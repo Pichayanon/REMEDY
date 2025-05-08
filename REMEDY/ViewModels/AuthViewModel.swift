@@ -18,7 +18,15 @@ class AuthViewModel: ObservableObject {
     func signIn(email: String, password: String) {
         errorMessage = nil
 
-        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedEmail.isEmpty, !trimmedPassword.isEmpty else {
+            self.errorMessage = "Email and password must not be empty."
+            return
+        }
+
+        Auth.auth().signIn(withEmail: trimmedEmail, password: trimmedPassword) { result, error in
             if let error = error {
                 DispatchQueue.main.async {
                     self.errorMessage = error.localizedDescription
@@ -32,6 +40,7 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
+
 
     func signUp(email: String, password: String) {
         errorMessage = nil

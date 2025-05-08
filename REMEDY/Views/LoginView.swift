@@ -15,6 +15,8 @@ struct LoginView: View {
             TextField("Email", text: $email)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .keyboardType(.emailAddress)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
 
             SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -25,24 +27,33 @@ struct LoginView: View {
                     .font(.caption)
             }
 
-            Button(isSignUp ? "Sign Up" : "Login") {
-                if isSignUp {
-                    authVM.signUp(email: email, password: password)
-                } else {
-                    authVM.signIn(email: email, password: password)
-                }
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.purple)
-            .foregroundColor(.white)
-            .cornerRadius(10)
+            Button(action: {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 
-            Button(isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up") {
-                isSignUp.toggle()
+                let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+                let cleanPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                if isSignUp {
+                    authVM.signUp(email: cleanEmail, password: cleanPassword)
+                } else {
+                    authVM.signIn(email: cleanEmail, password: cleanPassword)
+                }
+            }) {
+                Text(isSignUp ? "Sign Up" : "Login")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
             }
-            .font(.caption)
-            .foregroundColor(.blue)
+
+            Button(action: {
+                isSignUp.toggle()
+            }) {
+                Text(isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+            }
 
             Spacer()
         }
