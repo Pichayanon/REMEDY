@@ -14,14 +14,21 @@ class AuthViewModel: ObservableObject {
 
     func signIn(email: String, password: String) {
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
+            if let error = error {
+                print("❌ Sign-in failed: \(error.localizedDescription)")
+                return
+            }
+
             if result != nil {
                 DispatchQueue.main.async {
                     self.isLoggedIn = true
                     self.loadUserProfile()
+                    print("✅ Signed in successfully")
                 }
             }
         }
     }
+
 
     func signUp(email: String, password: String) {
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
@@ -70,8 +77,14 @@ class AuthViewModel: ObservableObject {
         do {
             try db.collection("users").document(userID).setData(from: profile, merge: true)
             self.userProfile = profile
+
+            // ✅ Reschedule notifications after saving the profile
+            let medVM = MedicationViewModel()
+            medVM.rescheduleAllNotifications(with: profile)
+
         } catch {
             print("Saving profile error: \(error)")
         }
     }
+
 }

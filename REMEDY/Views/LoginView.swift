@@ -19,11 +19,11 @@ struct LoginView: View {
             SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
 
-            if let error = authVM.errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
+//            if let error = authVM.errorMessage {
+//                Text(error)
+//                    .foregroundColor(.red)
+//                    .font(.caption)
+//            }
 
             Button(isSignUp ? "Sign Up" : "Login") {
                 if isSignUp {
