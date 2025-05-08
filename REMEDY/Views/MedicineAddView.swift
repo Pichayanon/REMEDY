@@ -3,6 +3,7 @@ import SwiftUI
 struct MedicationAddView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var viewModel: MedicationViewModel
+    @EnvironmentObject var authVM: AuthViewModel
 
     let medicationToEdit: Medication?
 
@@ -12,6 +13,9 @@ struct MedicationAddView: View {
     @State private var isBeforeSleep = false
     @State private var totalPills = ""
     @State private var pillsPerDose = ""
+
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         NavigationView {
@@ -69,6 +73,11 @@ struct MedicationAddView: View {
                     pillsPerDose = String(med.pillsPerDose)
                 }
             }
+            .alert("กรอกข้อมูลไม่ครบ", isPresented: $showAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(alertMessage)
+            }
         }
     }
 
@@ -86,12 +95,37 @@ struct MedicationAddView: View {
     }
 
     private func saveMedication() {
-        let total = Int(totalPills) ?? 0
-        let perDose = Int(pillsPerDose) ?? 1
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTotal = totalPills.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanPerDose = pillsPerDose.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !cleanName.isEmpty else {
+            alertMessage = "กรุณากรอกชื่อยา"
+            showAlert = true
+            return
+        }
+        
+        guard !mealTimes.isEmpty || isBeforeSleep else {
+            alertMessage = "กรุณาเลือกอย่างน้อยหนึ่งมื้อ หรือก่อนนอน"
+            showAlert = true
+            return
+        }
+
+        guard let total = Int(cleanTotal), total > 0 else {
+            alertMessage = "กรุณากรอกจำนวนยาทั้งหมดให้ถูกต้อง"
+            showAlert = true
+            return
+        }
+
+        guard let perDose = Int(cleanPerDose), perDose > 0 else {
+            alertMessage = "กรุณากรอกจำนวนยาต่อครั้งให้ถูกต้อง"
+            showAlert = true
+            return
+        }
 
         let newMed = Medication(
             id: medicationToEdit?.id ?? UUID(),
-            name: name,
+            name: cleanName,
             mealTiming: mealTiming,
             mealTimes: Array(mealTimes),
             isBeforeSleep: isBeforeSleep,
@@ -103,8 +137,9 @@ struct MedicationAddView: View {
             viewModel.deleteMedication(existing)
         }
 
-        viewModel.addMedication(newMed)
-
+        if let profile = authVM.userProfile {
+            viewModel.addMedication(newMed, userProfile: profile)
+        }
         dismiss()
     }
 }

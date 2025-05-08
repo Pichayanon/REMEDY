@@ -3,6 +3,7 @@ import Firebase
 
 @main
 struct REMEDYApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var authVM: AuthViewModel?
 
     init() {

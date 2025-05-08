@@ -16,5 +16,9 @@ struct ContentView: View {
 
 
 #Preview {
-    ContentView().environmentObject(AuthViewModel())
+    let vm = AuthViewModel(preview: true)
+    vm.isLoggedIn = false
+    return ContentView()
+        .environmentObject(vm)
 }
+

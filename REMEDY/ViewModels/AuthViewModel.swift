@@ -1,3 +1,4 @@
+import Foundation
 import FirebaseFirestore
 import FirebaseAuth
 
@@ -8,10 +9,21 @@ class AuthViewModel: ObservableObject {
 
     private let db = Firestore.firestore()
 
-    init() {
-        self.isLoggedIn = Auth.auth().currentUser != nil
-        if isLoggedIn {
-            loadUserProfile()
+    init(preview: Bool = false) {
+        if preview {
+            self.isLoggedIn = false
+            self.userProfile = UserProfile(
+                name: "Preview User",
+                breakfastTime: Date(),
+                lunchTime: Date(),
+                dinnerTime: Date(),
+                sleepTime: Date()
+            )
+        } else {
+            self.isLoggedIn = Auth.auth().currentUser != nil
+            if isLoggedIn {
+                loadUserProfile()
+            }
         }
     }
 
@@ -40,7 +52,6 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
-
 
     func signUp(email: String, password: String) {
         errorMessage = nil
@@ -120,13 +131,64 @@ class AuthViewModel: ObservableObject {
 
         do {
             try db.collection("users").document(userID).setData(from: profile, merge: true)
-            DispatchQueue.main.async {
-                self.userProfile = profile
+            db.collection("users").document(userID).collection("medications").getDocuments { snapshot, error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "Failed to reload medications: \(error.localizedDescription)"
+                        self.userProfile = profile
+                    }
+                    return
+                }
+
+                guard let documents = snapshot?.documents else { return }
+
+                let medications = documents.compactMap {
+                    try? $0.data(as: Medication.self)
+                }
+
+                for med in medications {
+                    NotificationManager.shared.cancelNotification(with: med.id.uuidString)
+                }
+                
+                for med in medications {
+                    let times = self.calculateReminderTimes(for: med, from: profile)
+                    for time in times {
+                        NotificationManager.shared.scheduleNotification(for: med, at: time)
+                    }
+                }
+
+                DispatchQueue.main.async {
+                    self.userProfile = profile
+                }
             }
+
         } catch {
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to save profile: \(error.localizedDescription)"
             }
         }
+    }
+
+    private func calculateReminderTimes(for medication: Medication, from profile: UserProfile) -> [Date] {
+        var times: [Date] = []
+
+        if medication.isBeforeSleep {
+            times.append(profile.sleepTime)
+        }
+
+        for meal in medication.mealTimes {
+            switch meal {
+            case "Breakfast":
+                times.append(profile.breakfastTime)
+            case "Lunch":
+                times.append(profile.lunchTime)
+            case "Dinner":
+                times.append(profile.dinnerTime)
+            default:
+                break
+            }
+        }
+
+        return times
     }
 }

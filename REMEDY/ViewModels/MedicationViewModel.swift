@@ -27,13 +27,19 @@ class MedicationViewModel: ObservableObject {
             }
     }
 
-    func addMedication(_ medication: Medication) {
+    func addMedication(_ medication: Medication, userProfile: UserProfile) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
         do {
-            _ = try db.collection("users").document(uid).collection("medications")
+            try db.collection("users").document(uid).collection("medications")
                 .document(medication.id.uuidString)
                 .setData(from: medication)
+
+            let reminderTimes = calculateReminderTimes(for: medication, from: userProfile)
+            for date in reminderTimes {
+                NotificationManager.shared.scheduleNotification(for: medication, at: date)
+            }
+
         } catch {
             print("Error saving medication: \(error)")
         }
@@ -49,6 +55,9 @@ class MedicationViewModel: ObservableObject {
             try db.collection("users").document(uid).collection("medications")
                 .document(updated.id.uuidString)
                 .setData(from: updated)
+
+            NotificationManager.shared.cancelNotification(with: updated.id.uuidString)
+
         } catch {
             print("Error updating medication: \(error)")
         }
@@ -62,7 +71,32 @@ class MedicationViewModel: ObservableObject {
             .delete { error in
                 if let error = error {
                     print("Error deleting medication: \(error)")
+                } else {
+                    NotificationManager.shared.cancelNotification(with: medication.id.uuidString)
                 }
             }
+    }
+
+    private func calculateReminderTimes(for medication: Medication, from profile: UserProfile) -> [Date] {
+        var times: [Date] = []
+
+        if medication.isBeforeSleep {
+            times.append(profile.sleepTime)
+        }
+
+        for meal in medication.mealTimes {
+            switch meal {
+            case "Breakfast":
+                times.append(profile.breakfastTime)
+            case "Lunch":
+                times.append(profile.lunchTime)
+            case "Dinner":
+                times.append(profile.dinnerTime)
+            default:
+                break
+            }
+        }
+
+        return times
     }
 }
