@@ -4,62 +4,75 @@ import Charts
 struct HistoryLogView: View {
     @ObservedObject var doseLogVM: DoseLogViewModel
 
-    @State private var selectedRange: String = "7 วันล่าสุด"
+    @State private var selectedRange: String = "Last 7 Days"
     @State private var searchText: String = ""
 
-    let rangeOptions = ["7 วันล่าสุด", "เดือนนี้"]
+    let rangeOptions = ["Last 7 Days", "This Month"]
 
     var body: some View {
-        VStack(spacing: 12) {
-            SummaryChart(taken: totalTaken, missed: totalMissed)
+        ScrollView {
+            VStack(spacing: 16) {
+                SummaryChart(taken: totalTaken, missed: totalMissed)
 
-            if let mostMissed = mostMissedMedication {
-                Text("ลืมกินยาสูงสุด: \(mostMissed.name) (\(mostMissed.count) ครั้ง)")
-                    .font(.subheadline)
-                    .foregroundColor(.red)
-            }
-
-            Picker("ช่วงเวลา", selection: $selectedRange) {
-                ForEach(rangeOptions, id: \.self) {
-                    Text($0)
+                if let mostMissed = mostMissedMedication {
+                    Text("Most missed: \(mostMissed.name) (\(mostMissed.count) times)")
+                        .font(.subheadline)
+                        .foregroundColor(.red)
                 }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
 
-            TextField("ค้นหาชื่อยา", text: $searchText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+                Picker("Time Range", selection: $selectedRange) {
+                    ForEach(rangeOptions, id: \.self) {
+                        Text($0)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
 
-            List {
+                TextField("Search medication...", text: $searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+
                 ForEach(groupedDates(), id: \.self) { dateKey in
-                    Section(header: Text(dateKey).font(.headline)) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(dateKey)
+                            .font(.headline)
+                            .padding(.horizontal)
+
                         ForEach(groupedLogs()[dateKey] ?? []) { log in
                             HStack {
                                 Circle()
                                     .fill(log.isTaken ? Color.green : Color.red)
                                     .frame(width: 10, height: 10)
 
-                                VStack(alignment: .leading) {
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text(log.medicationName)
                                         .fontWeight(.medium)
-                                    Text("มื้อ: \(translatedMeal(log.meal))")
+                                    Text("Meal: \(translatedMeal(log.meal))")
                                         .font(.caption)
                                         .foregroundColor(.gray)
                                 }
+
                                 Spacer()
-                                Text(log.isTaken ? "ทานแล้ว" : "ไม่ได้ทาน")
+
+                                Text(log.isTaken ? "Taken" : "Missed")
                                     .foregroundColor(log.isTaken ? .green : .red)
                                     .font(.subheadline)
                             }
-                            .padding(.vertical, 4)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                            )
+                            .padding(.horizontal)
                         }
                     }
+                    .padding(.bottom)
                 }
             }
-            .listStyle(.insetGrouped)
+            .padding(.bottom)
         }
-        .navigationTitle("ประวัติการกินยา")
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .navigationTitle("Medication History")
     }
 
     func filteredLogs() -> [DoseLog] {
@@ -69,10 +82,10 @@ struct HistoryLogView: View {
 
         let logsInRange: [DoseLog] = {
             switch selectedRange {
-            case "7 วันล่าสุด":
+            case "Last 7 Days":
                 let sevenDaysAgo = calendar.date(byAdding: .day, value: -6, to: startOfToday)!
                 return doseLogVM.logs.filter { $0.date >= sevenDaysAgo }
-            case "เดือนนี้":
+            case "This Month":
                 let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
                 return doseLogVM.logs.filter { $0.date >= startOfMonth }
             default:
@@ -109,22 +122,20 @@ struct HistoryLogView: View {
         let missed = filteredLogs().filter { !$0.isTaken }
         let grouped = Dictionary(grouping: missed, by: { $0.medicationName })
         let sorted = grouped.mapValues { $0.count }.sorted(by: { $0.value > $1.value })
-        if let first = sorted.first {
-            return (first.key, first.value)
-        }
-        return nil
+        return sorted.first.map { ($0.key, $0.value) }
     }
 
     func translatedMeal(_ meal: String) -> String {
         switch meal {
-        case "Breakfast": return "เช้า"
-        case "Lunch": return "กลางวัน"
-        case "Dinner": return "เย็น"
-        case "Sleep": return "ก่อนนอน"
+        case "Breakfast": return "Morning"
+        case "Lunch": return "Afternoon"
+        case "Dinner": return "Evening"
+        case "Sleep": return "Before Bed"
         default: return meal
         }
     }
 }
+
 
 struct SummaryChart: View {
     let taken: Int
@@ -167,4 +178,3 @@ struct SummaryChart: View {
         Int(round((Double(value) / Double(total)) * 100))
     }
 }
-

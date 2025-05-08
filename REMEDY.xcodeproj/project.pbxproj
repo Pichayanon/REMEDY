@@ -20,7 +20,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ViewModels/Untitled.swift,
-				Views/Untitled.swift,
 			);
 			target = 72A98EE62DAD4535007AE003 /* REMEDY */;
 		};

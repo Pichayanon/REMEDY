@@ -4,13 +4,12 @@ struct MedicineTakenView: View {
     @ObservedObject var viewModel: MedicationViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var doseLogVM = DoseLogViewModel()
-
     @State private var filter: FilterType = .all
 
     enum FilterType: String, CaseIterable {
-        case all = "ทั้งหมด"
-        case taken = "ทานแล้ว"
-        case notTaken = "ยังไม่ทาน"
+        case all = "All"
+        case taken = "Taken"
+        case notTaken = "Not Taken"
     }
 
     var currentMeal: String? {
@@ -19,13 +18,13 @@ struct MedicineTakenView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 16) {
-                Text("ทานยามื้อ: \(translatedMeal(currentMeal ?? "-"))")
+            VStack(spacing: 20) {
+                Text("\(translatedMeal(currentMeal ?? "-")) Meal")
                     .font(.title2.bold())
                     .padding(.top)
 
                 if currentMeal == nil {
-                    Text("ยังไม่ถึงเวลาทานยา")
+                    Text("It's not time for any medication yet.")
                         .foregroundColor(.secondary)
                         .padding()
                 } else {
@@ -34,41 +33,61 @@ struct MedicineTakenView: View {
                             Text(f.rawValue).tag(f)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
 
-                    List {
-                        ForEach(filteredMeds(), id: \.id) { med in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(med.name)
-                                        .fontWeight(.semibold)
-                                    Text("จำนวนที่เหลือ: \(med.totalPills)")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-
-                                Spacer()
-
-                                if hasAlreadyTaken(medication: med, meal: currentMeal!) {
-                                    Text("Done")
-                                        .foregroundColor(.green)
-                                } else {
-                                    Button("ทานแล้ว") {
-                                        doseLogVM.addLog(medication: med, meal: currentMeal!)
-                                        viewModel.markAsTaken(medication: med)
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(filteredMeds(), id: \.id) { med in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(med.name)
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        Text("Remaining pills: \(med.totalPills)")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
                                     }
-                                    .padding(6)
-                                    .background(Color.green.opacity(0.2))
-                                    .cornerRadius(8)
+
+                                    Spacer()
+
+                                    if hasAlreadyTaken(medication: med, meal: currentMeal!) {
+                                        Text("Taken")
+                                            .font(.caption)
+                                            .padding(6)
+                                            .background(Color.green.opacity(0.2))
+                                            .foregroundColor(.green)
+                                            .cornerRadius(8)
+                                    } else {
+                                        Button(action: {
+                                            doseLogVM.addLog(medication: med, meal: currentMeal!)
+                                            viewModel.markAsTaken(medication: med)
+                                        }) {
+                                            Text("Mark as Taken")
+                                                .font(.caption)
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 6)
+                                                .background(Color.blue.opacity(0.15))
+                                                .foregroundColor(.blue)
+                                                .cornerRadius(8)
+                                        }
+                                    }
                                 }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color(.systemGray6))
+                                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                                )
                             }
-                            .padding(.vertical, 4)
                         }
+                        .padding(.horizontal)
+                        .padding(.bottom)
                     }
                 }
             }
-            .navigationTitle("บันทึกการทานยา")
+            .navigationTitle("Medication Taken")
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
         }
     }
 
@@ -129,10 +148,10 @@ struct MedicineTakenView: View {
 
     func translatedMeal(_ meal: String) -> String {
         switch meal {
-        case "Breakfast": return "เช้า"
-        case "Lunch": return "กลางวัน"
-        case "Dinner": return "เย็น"
-        case "Sleep": return "ก่อนนอน"
+        case "Breakfast": return "Morning"
+        case "Lunch": return "Afternoon"
+        case "Dinner": return "Evening"
+        case "Sleep": return "Before Bed"
         default: return meal
         }
     }
