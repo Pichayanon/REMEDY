@@ -167,6 +167,11 @@ struct MedicineTakenView: View {
         let lunch = profile.lunchTime
         let dinner = profile.dinnerTime
         let sleep = profile.sleepTime
+        
+        let breakfastMinus30Min = calendar.date(byAdding: .minute, value: -30, to: breakfast)!
+        let lunchMinus30Min = calendar.date(byAdding: .minute, value: -30, to: lunch)!
+        let dinnerMinus30Min = calendar.date(byAdding: .minute, value: -30, to: dinner)!
+
         let sleepMinus30Min = calendar.date(byAdding: .minute, value: -30, to: sleep)!
         let sleepPlus2Hours = calendar.date(byAdding: .hour, value: 2, to: sleep)!
 
@@ -174,11 +179,17 @@ struct MedicineTakenView: View {
             return now >= start && now < end
         }
 
-        if isBetween(breakfast, lunch) {
+        if isBetween(breakfastMinus30Min, lunchMinus30Min) {
             return "Breakfast"
-        } else if isBetween(lunch, dinner) {
+        } else if isBetween(lunchMinus30Min, dinnerMinus30Min) {
             return "Lunch"
-        } else if isBetween(dinner, sleepMinus30Min) {
+        } else if isBetween(dinnerMinus30Min, sleepMinus30Min) {
+            return "Dinner"
+        } else if isBetween(breakfastMinus30Min, lunchMinus30Min) {
+            return "Breakfast"
+        } else if isBetween(lunchMinus30Min, dinnerMinus30Min) {
+            return "Lunch"
+        } else if isBetween(dinnerMinus30Min, sleepMinus30Min) {
             return "Dinner"
         } else if isBetween(sleepMinus30Min, sleepPlus2Hours) {
             return "Sleep"
