@@ -80,18 +80,24 @@ class MedicationViewModel: ObservableObject {
     private func calculateReminderTimes(for medication: Medication, from profile: UserProfile) -> [Date] {
         var times: [Date] = []
 
-        if medication.isBeforeSleep {
-            times.append(profile.sleepTime)
+        func adjustedTime(from base: Date, offset: Int) -> Date {
+            return Calendar.current.date(byAdding: .minute, value: offset, to: base) ?? base
         }
+
+        if medication.isBeforeSleep {
+            times.append(adjustedTime(from: profile.sleepTime, offset: -30))
+        }
+
+        let offset = medication.mealTiming == "Before" ? -30 : 30
 
         for meal in medication.mealTimes {
             switch meal {
             case "Breakfast":
-                times.append(profile.breakfastTime)
+                times.append(adjustedTime(from: profile.breakfastTime, offset: offset))
             case "Lunch":
-                times.append(profile.lunchTime)
+                times.append(adjustedTime(from: profile.lunchTime, offset: offset))
             case "Dinner":
-                times.append(profile.dinnerTime)
+                times.append(adjustedTime(from: profile.dinnerTime, offset: offset))
             default:
                 break
             }
