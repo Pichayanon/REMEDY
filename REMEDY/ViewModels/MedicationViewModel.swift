@@ -26,43 +26,6 @@ class MedicationViewModel: ObservableObject {
                 }
             }
     }
-    
-    private func scheduleLowPillWarningIfNeeded(for medication: Medication) {
-        let dosesPerDay = max(1, medication.mealTimes.count + (medication.isBeforeSleep ? 1 : 0))
-        let dailyPillUsage = medication.pillsPerDose * dosesPerDay
-
-        guard dailyPillUsage > 0 else { return }
-
-        let daysLeft = medication.totalPills / dailyPillUsage
-
-        print("💊 Checking pills for \(medication.name): \(medication.totalPills) pills left, uses \(dailyPillUsage)/day → \(daysLeft) days left")
-
-        if daysLeft == 1 {
-            // ⏱ Trigger the notification immediately
-            let content = UNMutableNotificationContent()
-            content.title = "⚠️ ยาใกล้หมดแล้ว"
-            content.body = "ยาของคุณ \(medication.name) จะหมดพรุ่งนี้!"
-            content.sound = .default
-
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false) // shows in 3 sec
-
-            let request = UNNotificationRequest(
-                identifier: "\(medication.id.uuidString)_lowpill",
-                content: content,
-                trigger: trigger
-            )
-
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("❌ Failed to trigger low-pill notification:", error)
-                } else {
-                    print("🚨 Low-pill alert triggered for \(medication.name)")
-                }
-            }
-        }
-    }
-
-
 
     func addMedication(_ medication: Medication, userProfile: UserProfile) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -87,7 +50,7 @@ class MedicationViewModel: ObservableObject {
         }
     }
 
-    func markAsTaken(medication: Medication) {
+    func reduceMedication(medication: Medication) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
         var updated = medication
@@ -122,6 +85,41 @@ class MedicationViewModel: ObservableObject {
                 }
             }
     }
+    
+    private func scheduleLowPillWarningIfNeeded(for medication: Medication) {
+        let dosesPerDay = max(1, medication.mealTimes.count + (medication.isBeforeSleep ? 1 : 0))
+        let dailyPillUsage = medication.pillsPerDose * dosesPerDay
+
+        guard dailyPillUsage > 0 else { return }
+
+        let daysLeft = medication.totalPills / dailyPillUsage
+
+        print("💊 Checking pills for \(medication.name): \(medication.totalPills) pills left, uses \(dailyPillUsage)/day → \(daysLeft) days left")
+
+        if daysLeft == 1 {
+            let content = UNMutableNotificationContent()
+            content.title = "⚠️ ยาใกล้หมดแล้ว"
+            content.body = "ยาของคุณ \(medication.name) จะหมดพรุ่งนี้!"
+            content.sound = .default
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false) // shows in 3 sec
+
+            let request = UNNotificationRequest(
+                identifier: "\(medication.id.uuidString)_lowpill",
+                content: content,
+                trigger: trigger
+            )
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Failed to trigger low-pill notification:", error)
+                } else {
+                    print("Low-pill alert triggered for \(medication.name)")
+                }
+            }
+        }
+    }
+
 
     private func calculateReminderTimes(for medication: Medication, from profile: UserProfile) -> [Date] {
         var times: [Date] = []
