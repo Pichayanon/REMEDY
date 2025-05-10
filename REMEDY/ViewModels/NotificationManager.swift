@@ -18,7 +18,7 @@ class NotificationManager {
 
     func scheduleNotification(for med: Medication, at date: Date, identifier: String) {
         let content = UNMutableNotificationContent()
-        content.title = "ถึงเวลากินยาแล้ว"
+        content.title = "Time to Take Your Medication"
         content.body = "\(med.name) - \(med.mealTiming)"
         content.sound = .defaultCritical
         content.categoryIdentifier = "MEDICATION_ACTIONS"
@@ -44,8 +44,8 @@ class NotificationManager {
         let newDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
 
         let content = UNMutableNotificationContent()
-        content.title = "⏰ Reminder"
-        content.body = "ถึงเวลากินยาแล้ว (เลื่อนมา 10 นาที)"
+        content.title = "Reminder"
+        content.body = "This is your 10-minute snooze reminder to take your medication"
         content.sound = .defaultCritical
         content.categoryIdentifier = "MEDICATION_ACTIONS"
 
@@ -73,8 +73,8 @@ class NotificationManager {
     
     func scheduleLowPillWarning(for med: Medication, at date: Date) {
         let content = UNMutableNotificationContent()
-        content.title = "⚠️ ยาใกล้หมดแล้ว"
-        content.body = "ยาของคุณ \(med.name) จะหมดพรุ่งนี้ อย่าลืมเตรียมหาซื้อเพิ่มนะ!"
+        content.title = "Low Medication Alert"
+        content.body = "Your medication \(med.name) will run out tomorrow. Don’t forget to prepare a refill!"
         content.sound = .default
 
         let trigger = UNCalendarNotificationTrigger(

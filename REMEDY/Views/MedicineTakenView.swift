@@ -4,13 +4,14 @@ struct MedicineTakenView: View {
     @ObservedObject var viewModel: MedicationViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var doseLogVM = DoseLogViewModel()
-    @State private var snoozedMedIDs: Set<String> = []
+
+    @State private var refreshTrigger = false
+    private let snoozeRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color.purple.opacity(0.1), Color.white],
-                           startPoint: .topLeading,
-                           endPoint: .bottomTrailing)
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
 
             ScrollView {
@@ -37,41 +38,26 @@ struct MedicineTakenView: View {
                                         .foregroundColor(.purple)
                                         .padding(.horizontal)
 
-                                    if !beforeMealMeds.isEmpty {
-                                        if meal != "Sleep" {
-                                            Text("Before Meal")
-                                                .font(.headline)
-                                                .foregroundColor(.purple.opacity(0.8))
-                                                .padding(.horizontal)
-                                        }
-
-                                        ForEach(beforeMealMeds, id: \.id) { med in
-                                            MedicationCard(med: med, meal: meal)
-                                        }
-                                    }
-
-                                    if !afterMealMeds.isEmpty {
-                                        if meal != "Sleep" {
-                                            Text("After Meal")
-                                                .font(.headline)
-                                                .foregroundColor(.purple.opacity(0.8))
-                                                .padding(.horizontal)
-                                        }
-
-                                        ForEach(afterMealMeds, id: \.id) { med in
-                                            MedicationCard(med: med, meal: meal)
-                                        }
+                                    ForEach(beforeMealMeds + afterMealMeds, id: \.id) { med in
+                                        MedicationCard(med: med, meal: meal)
                                     }
                                 }
                             }
                         }
+                        .id(refreshTrigger)
                     }
                 }
             }
         }
+        .onAppear {
+            SnoozeManager.shared.clearExpired()
+        }
+        .onReceive(snoozeRefreshTimer) { _ in
+            SnoozeManager.shared.clearExpired()
+            refreshTrigger.toggle()
+        }
     }
 
-    // MARK: - Medication Card
     @ViewBuilder
     func MedicationCard(med: Medication, meal: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -104,13 +90,17 @@ struct MedicineTakenView: View {
                         .cornerRadius(12)
 
                         let id = "\(med.id.uuidString)_\(mealIndex(meal))"
+                        let count = SnoozeManager.shared.snoozeCount(for: id)
+                        let isSnoozed = SnoozeManager.shared.isSnoozed(id: id)
+
                         if let scheduled = scheduledTime(for: med, meal: meal),
                            Date() >= scheduled,
-                           !snoozedMedIDs.contains(id) {
+                           !isSnoozed,
+                           count < 2 {
                             Button("Remind in 10 min") {
-                                NotificationManager.shared.rescheduleIn(minutes: 10, for: id)
-                                snoozedMedIDs.insert(id)
-                                resetSnooze(id: id, after: 10)
+                                NotificationManager.shared.rescheduleIn(minutes: 1, for: id)
+                                SnoozeManager.shared.incrementSnooze(id: id, durationMinutes: 1)
+                                refreshTrigger.toggle()
                             }
                             .font(.caption)
                             .padding(.horizontal, 12)
@@ -177,7 +167,13 @@ struct MedicineTakenView: View {
 
         guard let base = baseTime else { return nil }
 
-        let offset = medication.mealTiming == "Before Meal" ? -30 : 30
+        let offset: Int
+        if meal == "Sleep" {
+            offset = -30 
+        } else {
+            offset = medication.mealTiming == "Before Meal" ? -30 : 30
+        }
+
         let scheduled = Calendar.current.date(byAdding: .minute, value: offset, to: base)
 
         if let scheduled = scheduled {
@@ -192,9 +188,4 @@ struct MedicineTakenView: View {
         return nil
     }
 
-    func resetSnooze(id: String, after minutes: Int) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(minutes * 60)) {
-            snoozedMedIDs.remove(id)
-        }
-    }
 }

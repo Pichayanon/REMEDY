@@ -98,8 +98,8 @@ class MedicationViewModel: ObservableObject {
 
         if daysLeft == 1 {
             let content = UNMutableNotificationContent()
-            content.title = "⚠️ ยาใกล้หมดแล้ว"
-            content.body = "ยาของคุณ \(medication.name) จะหมดพรุ่งนี้!"
+            content.title = "Low Medication Warning"
+            content.body = "Your medication \(medication.name) will run out tomorrow. Please refill soon."
             content.sound = .default
 
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false) // shows in 3 sec
