@@ -4,10 +4,13 @@ struct MedicineTakenView: View {
     @ObservedObject var viewModel: MedicationViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var doseLogVM = DoseLogViewModel()
+    @State private var snoozedMedIDs: Set<String> = []
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color.purple.opacity(0.1), Color.white], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Color.purple.opacity(0.1), Color.white],
+                           startPoint: .topLeading,
+                           endPoint: .bottomTrailing)
                 .ignoresSafeArea()
 
             ScrollView {
@@ -43,44 +46,7 @@ struct MedicineTakenView: View {
                                         }
 
                                         ForEach(beforeMealMeds, id: \.id) { med in
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                HStack {
-                                                    Label(med.name, systemImage: "pills.fill")
-                                                        .font(.headline)
-                                                        .foregroundColor(.purple)
-                                                    Spacer()
-
-                                                    if let log = getTodayLog(for: med, meal: meal) {
-                                                        Text(log.isTaken ? "Taken" : "Missed")
-                                                            .font(.caption)
-                                                            .padding(.horizontal, 10)
-                                                            .padding(.vertical, 6)
-                                                            .background(log.isTaken ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-                                                            .foregroundColor(log.isTaken ? .green : .red)
-                                                            .cornerRadius(12)
-                                                    } else {
-                                                        Button("Mark as Taken") {
-                                                            doseLogVM.markTakenDose(medication: med, meal: meal)
-                                                            viewModel.reduceMedication(medication: med)
-                                                        }
-                                                        .font(.caption)
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 6)
-                                                        .background(Color.blue.opacity(0.15))
-                                                        .foregroundColor(.blue)
-                                                        .cornerRadius(12)
-                                                    }
-                                                }
-
-                                                Text("Remaining pills: \(med.totalPills)")
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .padding()
-                                            .background(Color.white)
-                                            .cornerRadius(16)
-                                            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-                                            .padding(.horizontal)
+                                            MedicationCard(med: med, meal: meal)
                                         }
                                     }
 
@@ -93,44 +59,7 @@ struct MedicineTakenView: View {
                                         }
 
                                         ForEach(afterMealMeds, id: \.id) { med in
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                HStack {
-                                                    Label(med.name, systemImage: "pills.fill")
-                                                        .font(.headline)
-                                                        .foregroundColor(.purple)
-                                                    Spacer()
-
-                                                    if let log = getTodayLog(for: med, meal: meal) {
-                                                        Text(log.isTaken ? "Taken" : "Missed")
-                                                            .font(.caption)
-                                                            .padding(.horizontal, 10)
-                                                            .padding(.vertical, 6)
-                                                            .background(log.isTaken ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-                                                            .foregroundColor(log.isTaken ? .green : .red)
-                                                            .cornerRadius(12)
-                                                    } else {
-                                                        Button("Mark as Taken") {
-                                                            doseLogVM.markTakenDose(medication: med, meal: meal)
-                                                            viewModel.reduceMedication(medication: med)
-                                                        }
-                                                        .font(.caption)
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 6)
-                                                        .background(Color.blue.opacity(0.15))
-                                                        .foregroundColor(.blue)
-                                                        .cornerRadius(12)
-                                                    }
-                                                }
-
-                                                Text("Remaining pills: \(med.totalPills)")
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .padding()
-                                            .background(Color.white)
-                                            .cornerRadius(16)
-                                            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-                                            .padding(.horizontal)
+                                            MedicationCard(med: med, meal: meal)
                                         }
                                     }
                                 }
@@ -142,6 +71,70 @@ struct MedicineTakenView: View {
         }
     }
 
+    // MARK: - Medication Card
+    @ViewBuilder
+    func MedicationCard(med: Medication, meal: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label(med.name, systemImage: "pills.fill")
+                    .font(.headline)
+                    .foregroundColor(.purple)
+
+                Spacer()
+
+                if let log = getTodayLog(for: med, meal: meal) {
+                    Text(log.isTaken ? "Taken" : "Missed")
+                        .font(.caption)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(log.isTaken ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
+                        .foregroundColor(log.isTaken ? .green : .red)
+                        .cornerRadius(12)
+                } else {
+                    HStack(spacing: 8) {
+                        Button("Mark as Taken") {
+                            doseLogVM.markTakenDose(medication: med, meal: meal)
+                            viewModel.reduceMedication(medication: med)
+                        }
+                        .font(.caption)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.15))
+                        .foregroundColor(.blue)
+                        .cornerRadius(12)
+
+                        let id = "\(med.id.uuidString)_\(mealIndex(meal))"
+                        if let scheduled = scheduledTime(for: med, meal: meal),
+                           Date() >= scheduled,
+                           !snoozedMedIDs.contains(id) {
+                            Button("Remind in 10 min") {
+                                NotificationManager.shared.rescheduleIn(minutes: 10, for: id)
+                                snoozedMedIDs.insert(id)
+                                resetSnooze(id: id, after: 10)
+                            }
+                            .font(.caption)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundColor(.orange)
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+            }
+
+            Text("Remaining pills: \(med.totalPills)")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(.horizontal)
+    }
+
+    // MARK: - Helpers
     func translatedMeal(_ meal: String) -> String {
         switch meal {
         case "Breakfast": return "Morning"
@@ -152,12 +145,56 @@ struct MedicineTakenView: View {
         }
     }
 
+    func mealIndex(_ meal: String) -> Int {
+        switch meal {
+        case "Breakfast": return 0
+        case "Lunch": return 1
+        case "Dinner": return 2
+        case "Sleep": return 3
+        default: return 0
+        }
+    }
+
     func getTodayLog(for medication: Medication, meal: String) -> DoseLog? {
         let today = Calendar.current.startOfDay(for: Date())
         return doseLogVM.logs.first {
             $0.medicationID == medication.id &&
             $0.meal == meal &&
             Calendar.current.isDate($0.date, inSameDayAs: today)
+        }
+    }
+
+    func scheduledTime(for medication: Medication, meal: String) -> Date? {
+        guard let profile = authVM.userProfile else { return nil }
+
+        let baseTime: Date? = switch meal {
+        case "Breakfast": profile.breakfastTime
+        case "Lunch": profile.lunchTime
+        case "Dinner": profile.dinnerTime
+        case "Sleep": profile.sleepTime
+        default: nil
+        }
+
+        guard let base = baseTime else { return nil }
+
+        let offset = medication.mealTiming == "Before Meal" ? -30 : 30
+        let scheduled = Calendar.current.date(byAdding: .minute, value: offset, to: base)
+
+        if let scheduled = scheduled {
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.hour, .minute], from: scheduled)
+            return calendar.date(bySettingHour: components.hour ?? 0,
+                                 minute: components.minute ?? 0,
+                                 second: 0,
+                                 of: Date())
+        }
+
+        return nil
+    }
+
+    func resetSnooze(id: String, after minutes: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(minutes * 60)) {
+            snoozedMedIDs.remove(id)
         }
     }
 }

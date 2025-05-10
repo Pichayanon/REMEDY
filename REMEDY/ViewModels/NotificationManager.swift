@@ -41,23 +41,30 @@ class NotificationManager {
 
 
     func rescheduleIn(minutes: Int, for id: String) {
-        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            guard let oldRequest = requests.first(where: { $0.identifier == id }) else { return }
+        let newDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
 
-            let newDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
-            let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.hour, .minute], from: newDate), repeats: false)
+        let content = UNMutableNotificationContent()
+        content.title = "⏰ Reminder"
+        content.body = "ถึงเวลากินยาแล้ว (เลื่อนมา 10 นาที)"
+        content.sound = .defaultCritical
+        content.categoryIdentifier = "MEDICATION_ACTIONS"
 
-            let newRequest = UNNotificationRequest(identifier: id, content: oldRequest.content, trigger: trigger)
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents([.hour, .minute], from: newDate),
+            repeats: false
+        )
 
-            UNUserNotificationCenter.current().add(newRequest) { error in
-                if let error = error {
-                    print("Failed to reschedule:", error)
-                } else {
-                    print("Rescheduled \(id) in \(minutes) minutes")
-                }
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to reschedule manually:", error)
+            } else {
+                print("✅ Manually scheduled reminder for ID: \(id) in \(minutes) minutes")
             }
         }
     }
+
 
     func cancelNotification(with id: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
