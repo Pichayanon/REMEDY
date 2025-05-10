@@ -98,8 +98,8 @@ struct MedicineTakenView: View {
                            !isSnoozed,
                            count < 2 {
                             Button("Remind in 10 min") {
-                                NotificationManager.shared.rescheduleIn(minutes: 1, for: id)
-                                SnoozeManager.shared.incrementSnooze(id: id, durationMinutes: 1)
+                                NotificationManager.shared.rescheduleIn(minutes: 10, for: id)
+                                SnoozeManager.shared.incrementSnooze(id: id, durationMinutes: 10)
                                 refreshTrigger.toggle()
                             }
                             .font(.caption)
