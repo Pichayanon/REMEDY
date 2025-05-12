@@ -34,18 +34,21 @@ struct HistoryLogView: View {
 
             VStack(spacing: 0) {
                 VStack(spacing: 12) {
-                    Text("History Log")
-                        .font(.largeTitle.bold())
-                        .foregroundColor(.purple)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 16)
-                        .padding(.horizontal)
+                    HStack {
+                        Text("History Log")
+                            .font(.largeTitle.bold())
+                            .foregroundColor(.purple)
 
-                    Picker("Range", selection: $selectedRange) {
-                        ForEach(rangeOptions, id: \.self) { Text($0) }
+                        Spacer()
+
+                        NavigationLink(destination: DashboardView(doseLogVM: doseLogVM)) {
+                            Text("Dashboard")
+                        }
+                        .buttonStyle(SoftTagButtonStyle(color: .blue))
                     }
-                    .pickerStyle(.segmented)
+                    .padding(.top, 16)
                     .padding(.horizontal)
+
 
                     Picker("Status", selection: $takenFilter) {
                         ForEach(takenOptions, id: \.self) { Text($0) }

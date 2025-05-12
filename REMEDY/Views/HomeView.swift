@@ -37,7 +37,7 @@ struct HomeView: View {
                                 .font(.title3.bold())
                                 .foregroundColor(.primary)
                             Spacer()
-                            Button("Taken") {
+                            Button("Today's Med") {
                                 showTaken = true
                             }
                             .buttonStyle(SoftTagButtonStyle(color: .green))
@@ -53,7 +53,6 @@ struct HomeView: View {
                                 medication: med,
                                 onEdit: {
                                     editingMedication = med
-                                    showAddMedicine = true
                                 },
                                 onDelete: {
                                     medicationVM.deleteMedication(med)
@@ -62,7 +61,6 @@ struct HomeView: View {
                         }
 
                         Button(action: {
-                            editingMedication = nil
                             showAddMedicine = true
                         }) {
                             HStack(spacing: 12) {
@@ -91,7 +89,12 @@ struct HomeView: View {
             }
 
             .sheet(isPresented: $showAddMedicine) {
-                MedicationAddView(medicationToEdit: editingMedication)
+                MedicationAddView(medicationToEdit: nil)
+                    .environmentObject(medicationVM)
+            }
+
+            .sheet(item: $editingMedication) { med in
+                MedicationAddView(medicationToEdit: med)
                     .environmentObject(medicationVM)
             }
 
@@ -111,7 +114,7 @@ struct HomeView: View {
                     HistoryLogView(doseLogVM: doseLogVM)
                 }
             }
-            
+
             .onAppear {
                 medicationVM.loadMedications { meds in
                     doseLogVM.autoLogMissedDoses(for: meds)
@@ -120,6 +123,7 @@ struct HomeView: View {
         }
     }
 }
+
 
 struct SoftTagButtonStyle: ButtonStyle {
     var color: Color
@@ -135,4 +139,3 @@ struct SoftTagButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
 }
-

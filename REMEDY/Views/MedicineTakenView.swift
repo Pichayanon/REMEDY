@@ -67,7 +67,7 @@ struct MedicineTakenView: View {
                     .foregroundColor(.purple)
 
                 Spacer()
-
+                
                 if let log = getTodayLog(for: med, meal: meal) {
                     Text(log.isTaken ? "Taken" : "Missed")
                         .font(.caption)

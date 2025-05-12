@@ -8,7 +8,7 @@ struct MedicationAddView: View {
     let medicationToEdit: Medication?
 
     @State private var name = ""
-    @State private var mealTiming = "After Meal"
+    @State private var mealTiming = "Before Meal"
     @State private var mealTimes = Set<String>()
     @State private var isBeforeSleep = false
     @State private var totalPills = ""
@@ -64,7 +64,7 @@ struct MedicationAddView: View {
                     .padding(.horizontal)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Label("Meal Times", systemImage: "clock")
+                        Label("Meal Time Dose", systemImage: "clock")
                             .font(.subheadline.bold())
                             .foregroundColor(.secondary)
 
