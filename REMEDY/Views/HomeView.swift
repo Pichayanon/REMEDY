@@ -111,6 +111,12 @@ struct HomeView: View {
                     HistoryLogView(doseLogVM: doseLogVM)
                 }
             }
+            
+            .onAppear {
+                medicationVM.loadMedications { meds in
+                    doseLogVM.autoLogMissedDoses(for: meds)
+                }
+            }
         }
     }
 }

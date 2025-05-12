@@ -9,6 +9,9 @@ struct ProfileView: View {
     @State private var lunch = Date()
     @State private var dinner = Date()
     @State private var sleep = Date()
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+
 
     var body: some View {
         ZStack {
@@ -100,6 +103,13 @@ struct ProfileView: View {
                 sleep = p.sleepTime
             }
         }
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Invalid Time Setup"),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
 
     func mealRow(title: String, time: Binding<Date>) -> some View {
@@ -112,8 +122,43 @@ struct ProfileView: View {
         .font(.body)
     }
 
-
     func saveProfile() {
+        let calendar = Calendar.current
+        func timeOnly(_ date: Date) -> Date {
+            let comps = calendar.dateComponents([.hour, .minute], from: date)
+            return calendar.date(from: comps) ?? date
+        }
+
+        let breakfastTime = timeOnly(breakfast)
+        let lunchTime = timeOnly(lunch)
+        let dinnerTime = timeOnly(dinner)
+        let sleepTime = timeOnly(sleep)
+
+        if breakfastTime >= lunchTime {
+            alertMessage = "Breakfast time must be before Lunch."
+            showAlert = true
+            return
+        }
+
+        if lunchTime >= dinnerTime {
+            alertMessage = "Lunch time must be before Dinner."
+            showAlert = true
+            return
+        }
+
+        if dinnerTime >= sleepTime {
+            alertMessage = "Dinner time must be before Sleep."
+            showAlert = true
+            return
+        }
+
+        let sleepHour = calendar.component(.hour, from: sleep)
+        if sleepHour >= 24 || sleepHour < 0 {
+            alertMessage = "Sleep time must be before midnight."
+            showAlert = true
+            return
+        }
+
         let profile = UserProfile(
             name: name,
             breakfastTime: breakfast,

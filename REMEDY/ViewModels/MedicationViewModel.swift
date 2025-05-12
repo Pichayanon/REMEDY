@@ -26,6 +26,25 @@ class MedicationViewModel: ObservableObject {
                 }
             }
     }
+    
+    func loadMedications(completion: @escaping ([Medication]) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        db.collection("users").document(uid).collection("medications")
+            .getDocuments { snapshot, error in
+                guard let documents = snapshot?.documents else {
+                    print("Error loading medications:", error?.localizedDescription ?? "")
+                    completion([])
+                    return
+                }
+
+                let medications = documents.compactMap { try? $0.data(as: Medication.self) }
+                DispatchQueue.main.async {
+                    self.medications = medications
+                    completion(medications)
+                }
+            }
+    }
 
     func addMedication(_ medication: Medication, userProfile: UserProfile) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -94,7 +113,7 @@ class MedicationViewModel: ObservableObject {
 
         let daysLeft = medication.totalPills / dailyPillUsage
 
-        print("💊 Checking pills for \(medication.name): \(medication.totalPills) pills left, uses \(dailyPillUsage)/day → \(daysLeft) days left")
+        print("Checking pills for \(medication.name): \(medication.totalPills) pills left, uses \(dailyPillUsage)/day → \(daysLeft) days left")
 
         if daysLeft == 1 {
             let content = UNMutableNotificationContent()

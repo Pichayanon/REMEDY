@@ -34,11 +34,10 @@ class NotificationManager {
             if let error = error {
                 print("Failed to schedule notification:", error)
             } else {
-                print("✅ Scheduled notification for \(med.name) [\(identifier)] at \(date)")
+                print("Scheduled notification for \(med.name) [\(identifier)] at \(date)")
             }
         }
     }
-
 
     func rescheduleIn(minutes: Int, for id: String) {
         let newDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
@@ -60,7 +59,7 @@ class NotificationManager {
             if let error = error {
                 print("Failed to reschedule manually:", error)
             } else {
-                print("✅ Manually scheduled reminder for ID: \(id) in \(minutes) minutes")
+                print("Manually scheduled reminder for ID: \(id) in \(minutes) minutes")
             }
         }
     }
@@ -90,9 +89,9 @@ class NotificationManager {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("❌ Failed to schedule low pill warning:", error)
+                print("Failed to schedule low pill warning:", error)
             } else {
-                print("⚠️ Low pill warning scheduled for \(med.name) at \(date)")
+                print("Low pill warning scheduled for \(med.name) at \(date)")
             }
         }
     }

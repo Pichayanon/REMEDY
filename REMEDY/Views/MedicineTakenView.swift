@@ -124,12 +124,11 @@ struct MedicineTakenView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Helpers
     func translatedMeal(_ meal: String) -> String {
         switch meal {
-        case "Breakfast": return "Morning"
-        case "Lunch": return "Afternoon"
-        case "Dinner": return "Evening"
+        case "Breakfast": return "Breakfast"
+        case "Lunch": return "Lunch"
+        case "Dinner": return "Dinner"
         case "Sleep": return "Before Bed"
         default: return meal
         }
