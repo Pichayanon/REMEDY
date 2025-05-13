@@ -38,8 +38,32 @@ struct MedicineTakenView: View {
                                         .foregroundColor(.purple)
                                         .padding(.horizontal)
 
-                                    ForEach(beforeMealMeds + afterMealMeds, id: \.id) { med in
-                                        MedicationCard(med: med, meal: meal)
+                                    if meal == "Sleep" {
+                                        ForEach(medsForMeal, id: \.id) { med in
+                                            MedicationCard(med: med, meal: meal)
+                                        }
+                                    } else {
+                                        if !beforeMealMeds.isEmpty {
+                                            Text("Before Meal")
+                                                .font(.subheadline.bold())
+                                                .foregroundColor(.gray)
+                                                .padding(.horizontal)
+
+                                            ForEach(beforeMealMeds, id: \.id) { med in
+                                                MedicationCard(med: med, meal: meal)
+                                            }
+                                        }
+
+                                        if !afterMealMeds.isEmpty {
+                                            Text("After Meal")
+                                                .font(.subheadline.bold())
+                                                .foregroundColor(.gray)
+                                                .padding(.horizontal)
+
+                                            ForEach(afterMealMeds, id: \.id) { med in
+                                                MedicationCard(med: med, meal: meal)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -168,7 +192,7 @@ struct MedicineTakenView: View {
 
         let offset: Int
         if meal == "Sleep" {
-            offset = -30 
+            offset = -30
         } else {
             offset = medication.mealTiming == "Before Meal" ? -30 : 30
         }
